@@ -1,0 +1,11 @@
+
+\usepackage{ifthen}
+
+\ifdefined\showtranscript
+\else
+	\def\showtranscript{0}
+\fi
+
+\ifthenelse{\equal{\showtranscript}{1}}{
+	\setbeameroption{show notes on second screen=top}
+}{}

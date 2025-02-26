@@ -1,0 +1,29 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tavox}
+
+\input{../transcript_setup.tex}
+
+\begin{document}
+
+\begin{frame}[fragile]
+	\speak[predelay=0.5]{Using the \iftranscript{\texttt{\textbackslash iftranscript}}{"if-transcript"} command, you can add formatting to your transcripts \iftranscript{\textbf{without}}{without} confusing the TTS system.}
+
+	
+	\speak[predelay=0.5]{
+		Another application for this command is to correct the pronunciation of the TTS system in certain cases.
+		One such example is the present and past tense of the word "read".
+	}
+
+	\begin{itemize}
+		\item use \texttt{\textbackslash iftranscipt} inside \texttt{\textbackslash speak} commands to format your transcript
+		\item example:\\
+			\verb|\speak{|\\
+			\verb|   You can \iftranscript{\textbf{highlight}}{highlight}|\\
+			\verb|   some words in the transcript.|\\
+			\verb|}|
+		\item correct spelling: \verb|\iftranscript{read}{red}|
+	\end{itemize}
+\end{frame}
+
+\end{document}
+

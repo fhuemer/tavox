@@ -1,0 +1,137 @@
+%% tavox.sty
+%% Copyright 2025 Florian Huemer
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
+% of this license or (at your option) any later version.
+
+\RequirePackage{expl3}
+
+\ExplSyntaxOn
+\ProvidesExplPackage{tavox}{2025/02/21}{0.2}{A package to create beamer presentations with a voice-over tracks.}
+
+\@ifclassloaded{beamer} {} {
+	\PackageError { tavox }
+	{ This package requires the beamer document class }
+	{ Please use \string\documentclass{beamer} and try again. }
+}
+
+\newwrite\tavoxscript
+\immediate\openout\tavoxscript=\jobname.tavox
+\immediate\write\tavoxscript{set_pdf("\jobname.pdf")}
+
+\keys_define:nn { speak/options } {
+	predelay .tl_set:N = \l_speak_predelay,
+	predelay .initial:n = 0,
+	postdelay .tl_set:N = \l_speak_postdelay,
+	postdelay .initial:n = 0
+}
+
+\newcommand<>\tavoxtranscript[1]{
+	\bool_gset_true:N \g_transcript_active
+	\note#2{#1}
+}
+
+\bool_new:N \g_transcript_active
+\seq_new:N \l_overlay_input_seq
+\int_new:N \g_start_slide
+\int_new:N \g_end_slide
+
+\bool_gset_false:N \g_transcript_active
+
+\newcommand\iftranscript[2]{%
+	\bool_if:NTF \g_transcript_active { #1 }{ #2 } 
+}
+
+\newcommand{\speakline}[1]{
+	\bool_if:nTF {
+		\int_compare_p:nNn {\g_start_slide} = {0} &&
+		\int_compare_p:nNn {\g_end_slide} = {0} 
+	}{
+		\immediate\write\tavoxscript{speak("""#1""")}
+		\tavoxtranscript{#1~}
+	}{
+		% No matter if we have a single frame <N> or a range <A-B>, we only need a single entry in the tavox script
+		\only<\g_start_slide>{
+			\immediate\write\tavoxscript{speak("""#1""")}
+		}
+		
+		\int_compare:nNnTF {\g_start_slide} > {0} {
+			\only<\g_start_slide>{
+				\tavoxtranscript{#1~}
+			}
+		}{
+			% the transcript text is shown on all slides, s.t., the user can step through the animation, while reading the text. 
+			\only<\g_start_slide-\g_end_slide>{
+				\tavoxtranscript{#1~}
+			}
+		}
+	}
+}
+
+\newcommand{\delay}[1]{
+	\bool_if:nTF {
+		\int_compare_p:nNn {\g_start_slide} = {0} &&
+		\int_compare_p:nNn {\g_end_slide} = {0} 
+	}{
+		\immediate\write\tavoxscript{delay(#1)}
+	}{
+		\only<\g_start_slide>{\immediate\write\tavoxscript{delay(#1)}}
+	}
+}
+
+\newenvironment<>{speakenv}[1][]{
+	\ignorespaces
+	\keys_set:nn { speak/options } { #1 } % parse key/value pairs
+	\int_gset:Nn \g_start_slide { 0 }
+	\int_gset:Nn \g_end_slide { 0 }
+	
+	\tl_if_empty:nTF {#2} {
+		\immediate\write\tavoxscript{show_slide(\thepage)}
+		\immediate\write\tavoxscript{delay(\l_speak_predelay)}
+	}{
+		\regex_split:nnN { -|<|> } { #2 } \l_overlay_input_seq
+		\int_compare:nTF { \seq_count:N \l_overlay_input_seq == 3 } {
+			% overlay specification is a single frame i.e., <N> 
+			\int_gset:Nn\g_start_slide {\seq_item:Nn \l_overlay_input_seq { 2 }}
+			\only<\g_start_slide>{
+				\immediate\write\tavoxscript{show_slide(\thepage)}
+				\immediate\write\tavoxscript{delay(\l_speak_predelay)}
+			}
+		}{
+			% overlay specification is a range i.e., <A-B> 
+			\int_gset:Nn \g_start_slide {\seq_item:Nn \l_overlay_input_seq { 2 }}
+			\int_gset:Nn \g_end_slide {\seq_item:Nn \l_overlay_input_seq { 3 }}
+			\only<\g_start_slide>{			
+				\immediate\write\tavoxscript{show_slide_range(\thepage, \int_eval:n { \thepage + \g_end_slide - \g_start_slide } )}
+				\immediate\write\tavoxscript{delay(\l_speak_predelay)}
+			}
+		}
+	}
+}{
+	\bool_if:nTF {
+		\int_compare_p:nNn {\g_start_slide} = {0} &&
+		\int_compare_p:nNn {\g_end_slide} = {0} 
+	}{
+		\immediate\write\tavoxscript{delay(\l_speak_postdelay)}
+		\immediate\write\tavoxscript{}
+	}{
+		\only<\g_start_slide>{
+			\immediate\write\tavoxscript{delay(\l_speak_postdelay)}
+			\immediate\write\tavoxscript{}
+		}
+	}
+}
+
+\newcommand<>\speak[2][]{
+	\begin{speakenv}#3[#1]
+		\speakline{#2}
+	\end{speakenv}
+}
+
+\newcommand\setvoice[1]{
+	\immediate\write\tavoxscript{set_voice("#1")}
+}
+
+\ExplSyntaxOff
+

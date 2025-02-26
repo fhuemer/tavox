@@ -1,0 +1,54 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tavox}
+
+\input{../transcript_setup.tex}
+
+\begin{document}
+
+\begin{frame}[fragile]
+
+	\speak<1>[predelay=1.0]{
+		With tavox you can also use overlay specifications.
+	}
+
+	\speak<2>[predelay=0.5]{
+		To do so simply use the usual angle bracket syntax.
+	}
+
+	\speak<3>[predelay=0.5]{
+		Here you can see an example how a speak command looks like, that shall only be active at the third overlay step and speak the word "hello".
+	}
+
+	\speak<4>[predelay=0.5]{
+		It is also possible to use a range in the overlay specification. In such a case the text is spoken over all steps in the range. Every step is shown for the same amount of time.
+	}
+
+	\speak<5-7>[predelay=0.5]{
+		This example uses a range from 5 to 7.
+	}
+
+	\speak<8>[predelay=0.5]{
+		Keep in mind that if you use overlay specifications for a slide then every "speak" command on that slide should use one.
+		A speak command without one causes the specified text to be spoken at every overlay step, which is probably not something often required.
+	}
+
+	\speak<8>[predelay=0.5]{
+		Please, have a look into the source files of this presentation to learn more.
+	}
+
+	\begin{itemize}
+		\item<1-> \texttt{tavox} supports overlay specification
+		\item<2-> usual overlay syntax (\texttt{< >})
+		\item<3-> example: say ``Hello'' on the third overlay step: \verb|\speak<3>{Hello}|
+		\item<4-> ranges are also possible (example: \verb|\speak<4-5>{Hello}|)
+		\begin{itemize}
+			\item<5-> Step 5
+			\item<6-> Step 6
+			\item<7-> Step 7
+		\end{itemize}
+		\item<8-> if overlay specifications are used on a slide, all speak commands should have one
+	\end{itemize}
+\end{frame}
+
+\end{document}
+

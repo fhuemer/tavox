@@ -1,0 +1,15 @@
+build
+*.egg-info
+__pycache__
+
+*.aux
+*.log
+*.nav
+*.out
+*.pdf
+*.rubbercache
+*.snm
+*.tavox
+*.mkv
+*.toc
+*.vrb
