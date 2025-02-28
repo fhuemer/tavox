@@ -21,12 +21,8 @@
 import subprocess
 import textwrap
 import os
-import shutil
 import logging
-import tempfile
 
-from typing import Optional
-from pathlib import Path
 
 logger = logging.getLogger("tavox")
 
@@ -53,7 +49,7 @@ class CoquiTTS(Voice):
 			shell=True
 		)
 		if r.returncode != 0:
-			raise Exception(f"[coquiTTS] Unable to generate TTS sample: {r.stderr}")
+			raise RuntimeError(f"[coquiTTS] Unable to generate TTS sample: {r.stderr}")
 
 
 class OpenAITTS(Voice):
@@ -89,14 +85,14 @@ def get_voice(voice: str) -> Voice:
 def register_voice(name: str, voice: str | Voice):
 	#check voice id for uniqueness
 	if name in _voice_dict:
-		raise Exception(
+		raise ValueError(
 			f"There already is a voice with the name '{name}'. Use the function deregister_voice to remove the conflicting voice or choose a different name."
 		)
 
 	if isinstance(voice, Voice):
 		for k, v in _voice_dict.items():
 			if isinstance(v, Voice) and v.voice_id == voice.voice_id:
-				raise Exception(
+				raise ValueError(
 					f"There already exists a voice with the same voice_id: ({k}). Use the function deregister_voice to remove the conflicting voice or make sure to provide Voice instance provides a different 'voice_id'. "
 				)
 

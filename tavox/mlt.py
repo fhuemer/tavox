@@ -20,22 +20,16 @@
 
 import subprocess
 import os
-import shutil
 import uuid
-import copy
 import textwrap
-import hashlib
 import math
 import logging
 
-from asyncio import new_event_loop
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 from datetime import timedelta
 
 from .cache import SampleDB
-from .voices import Voice, get_voice
 from .project import TavoxProject
 from .events import *
 

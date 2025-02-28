@@ -19,9 +19,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 
-import subprocess
-
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from datetime import timedelta
 

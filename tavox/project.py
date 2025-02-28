@@ -19,14 +19,12 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import os
-import textwrap
 from pathlib import Path
-from dataclasses import dataclass, field
 from typing import Optional
 from datetime import timedelta
 
 from .voices import Voice, get_voice
-from .events import *
+from .events import TimelineEvent, SpeakEvent, DelayEvent, ShowSlideRangeEvent, ShowSlideEvent, PlayAudioEvent
 
 
 class TavoxProject:
@@ -71,7 +69,7 @@ class TavoxProject:
 		self._check_current_pdf()
 
 		self._current_slide += 1
-		self.timeline.append(ShowSlideEvent(pdf=self._current_pdf, slide=slide))
+		self.timeline.append(ShowSlideEvent(pdf=self._current_pdf, slide=self._current_slide))
 
 	def speak(self, text: str):
 		self.timeline.append(SpeakEvent(text=text, voice=self._current_voice))
@@ -81,11 +79,11 @@ class TavoxProject:
 			return
 		self.timeline.append(DelayEvent(length=timedelta(seconds=seconds)))
 
-	def play_audio(path: str | os.PathLike):
+	def play_audio(self, path: str | os.PathLike):
 		path = Path(path).absolute()
 		if not path.exists():
 			raise FileNotFoundError(f"Tha audio file {path} does not exist!")
-		_project.timeline.append(PlayAudioEvent(audio_file=path))
+		self.timeline.append(PlayAudioEvent(audio_file=path))
 
 	def get_all_pdfs(self):
 		pdfs = set()
@@ -98,4 +96,4 @@ class TavoxProject:
 
 	def _check_current_pdf(self):
 		if self._current_pdf is None:
-			raise Exception("No PDF set!")
+			raise ValueError("No PDF set!")
