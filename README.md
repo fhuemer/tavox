@@ -16,10 +16,10 @@ Consider the example `demo.tex` shown below.
 
 \begin{document}
 
-	\begin{frame}
-		\speak{Hello! You are viewing an example presentation that shows how tavox is used.}
-		Hello World!
-	\end{frame}
+\begin{frame}
+	\speak{Hello! You are viewing an example presentation that shows how tavox is used.}
+	Hello World!
+\end{frame}
 
 \end{document}
 ```
