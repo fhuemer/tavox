@@ -8,7 +8,7 @@
 \RequirePackage{expl3}
 
 \ExplSyntaxOn
-\ProvidesExplPackage{tavox}{2025/02/28}{0.2.1}{A package to create beamer presentations with a voice-over tracks.}
+\ProvidesExplPackage{tavox}{2025/03/12}{0.2.2}{A package to create beamer presentations with a voice-over tracks.}
 
 \@ifclassloaded{beamer} {} {
 	\PackageError { tavox }
@@ -46,7 +46,7 @@
 \newcommand{\speakline}[1]{
 	\bool_if:nTF {
 		\int_compare_p:nNn {\g_start_slide} = {0} &&
-		\int_compare_p:nNn {\g_end_slide} = {0} 
+		\int_compare_p:nNn {\g_end_slide} = {0}
 	}{
 		%no overlay specification
 		\bool_gset_false:N \g_transcript_active
@@ -105,7 +105,7 @@
 			% overlay specification is a range i.e., <A-B> 
 			\int_gset:Nn \g_start_slide {\seq_item:Nn \l_overlay_input_seq { 2 }}
 			\int_gset:Nn \g_end_slide {\seq_item:Nn \l_overlay_input_seq { 3 }}
-			\only<\g_start_slide>{			
+			\only<\g_start_slide>{
 				\immediate\write\tavoxscript{show_slide_range(\thepage, \int_eval:n { \thepage + \g_end_slide - \g_start_slide } )}
 				\immediate\write\tavoxscript{delay(\l_speak_predelay)}
 			}
@@ -132,8 +132,10 @@
 	\end{speakenv}
 }
 
-\newcommand\setvoice[1]{
-	\immediate\write\tavoxscript{set_voice("#1")}
+\newcommand<>\setvoice[1]{
+	\only#2{
+		\immediate\write\tavoxscript{set_voice("#1")}
+	}
 }
 
 \ExplSyntaxOff

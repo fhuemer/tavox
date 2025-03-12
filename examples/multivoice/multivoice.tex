@@ -1,0 +1,40 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tavox}
+
+\input{../transcript_setup.tex}
+
+\begin{document}
+
+\begin{frame}{Multi-Voice Presentations}
+
+	\setvoice<1>{alloy}
+	\speak<1>[predelay=1.0]{
+		With tavox it's possible to use multiple voices in a single presentation.
+	}
+
+	\setvoice<2>{onyx}
+	\speak<2>[predelay=1.0]{
+		The current voice can be configured using the \iftranscript{\texttt{setvoice}}{"set-voice"} command.
+		The new voice then applies to all subsequent \iftranscript{\texttt{speak}}{"speak"} commands.
+	}
+
+	\setvoice<3>{shimmer}
+	\speak<3>[predelay=1.0]{
+		The \iftranscript{\texttt{setvoice}}{"set-voice"} command also takes an overlay specification to allow for mid-slide voice switching.
+	}
+	
+	\setvoice<4>{echo}
+	\speak<4>[predelay=1.0,postdelay=1.0]{
+		A possible use-case for this feature is to depict conversations between multiple people.
+	}
+
+	\begin{itemize}
+		\item<1-> \texttt{tavox} supports multiple voices in one presentation
+		\item<2-> Switch between different voices using the \texttt{setvoice} command
+		\item<3-> \texttt{setvoice} takes an overlay specification
+		\item<4-> Possible use-case: conversations
+	\end{itemize}
+\end{frame}
+
+\end{document}
+
