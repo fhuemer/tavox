@@ -22,15 +22,17 @@ from setuptools import setup
 
 setup(
 	name="tavox",
-	version="0.2.2",
+	version="0.2.3",
 	description="Text-to-speech tool for presentations",
 	author="Florian Huemer",
 	license="GPLv3",
 	packages=["tavox"],
 	install_requires=["docopt"],
-	scripts=[
-		"scripts/tavox"
-	],
+	entry_points={
+		"console_scripts": [
+			'tavox=tavox.__main__:main',
+		],
+	},
 	zip_safe=False
 )
 

@@ -156,7 +156,7 @@ def main():
 
 	set_voice(options["--voice"])
 	run_script(script)
-	
+
 	if options["--mlt-project"]:
 		mlt_project_file = options["--mlt-project"]
 	else:
