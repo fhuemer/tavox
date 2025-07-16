@@ -13,3 +13,5 @@ __pycache__
 *.mkv
 *.toc
 *.vrb
+*.fls
+*.fdb_latexmk

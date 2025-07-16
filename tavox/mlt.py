@@ -24,6 +24,9 @@ import uuid
 import textwrap
 import math
 import logging
+import platform
+import glob
+import shutil
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -101,15 +104,14 @@ def _render_pdfs(pdf_files: list[Path], mlt: _MLTProject) -> dict[Path, Path]:
 
 	for pdf, dest in mlt.pdf_image_dict.items():
 		logger.info(f"rendering {pdf.name} to {dest}/*.png")
-		# The order of the arguments is imporatant! The density argument specifies how the pdf must be rendered and must, hence, appear BEFORE the pdf file. Otherwise the output quality is very poor.
 		r = subprocess.run(
-			f"magick -density 600 {pdf} -resize x{mlt.height} {dest}/%d.png",
+			f"pdftoppm -png -r 600 -scale-to-y {mlt.height} -scale-to-x {mlt.width} {pdf} {dest}/slide",
 			stdout=subprocess.PIPE,
 			stderr=subprocess.PIPE,
 			shell=True
 		)
 		if r.returncode != 0:
-			raise Exception("Unable to render PDF")
+			raise Exception(f"Unable to render PDF. pdftoppm exited with return code {r.returncode}. stderr: {r.stderr.decode("utf-8")}")
 
 
 def _process_slide_events(mlt: _MLTProject):
@@ -119,7 +121,7 @@ def _process_slide_events(mlt: _MLTProject):
 		match event:
 			case ShowSlideEvent():
 				new_event = ShowImageEvent(
-					image_file=Path(f"{mlt.pdf_image_dict[event.pdf]}/{event.slide-1}.png").absolute()
+					image_file=Path(f"{mlt.pdf_image_dict[event.pdf]}/slide-{event.slide}.png").absolute()
 				)
 				new_timeline.append(new_event)
 			case ShowSlideRangeEvent():
@@ -127,7 +129,7 @@ def _process_slide_events(mlt: _MLTProject):
 				for slide in range(event.start_slide, event.end_slide + 1):
 					frames.append(
 						StillFrame(
-						image_file=Path(f"{mlt.pdf_image_dict[event.pdf]}/{slide-1}.png").absolute(),
+						image_file=Path(f"{mlt.pdf_image_dict[event.pdf]}/slide-{slide}.png").absolute(),
 						duration=timedelta(0)
 						)
 					)

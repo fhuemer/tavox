@@ -32,28 +32,22 @@ Upon compilation of the above presentation, a file named `demo.tavox` will be cr
 This file can then be passed on to the accompanying `tavox` CLI tool that comes with the `tavox` Python package to create a video:
 
 ```bash
-tavox demo.tavox
+python -m tavox demo.tavox
 ```
 
 This command automatically synthesizes the required voice samples, renders the PDF file and creates an MLT project, which is then rendered into a video file.
 The created MLT project can also be opened in video editors like [Shotcut](https://www.shotcut.org/) or [Kdenlive](https://kdenlive.org/).
 
 
-## Installation
-
-Run `make install` to install `tavox` Python package using pip and to copy the `tavox` LaTeX package to `~/texmf/tex/latex`.
-Note that these two steps can also be run individually via `make install_pip` and `make install_latex`.
-In case you don't want the `tavox` latex package installed in your home directory, you can put it at an arbitrary location as long as you ensure that `tavox.sty` is in your LaTeX search path.
-
 ## Dependencies
 
 Strict Dependencies:
  * [ffmpeg](https://ffmpeg.org/)
- * [Imagemagick](https://imagemagick.org/) (PDF to image conversion)
- * [MLT Multimedia Framework]( ) (used by many video editors, such as [Shotcut](https://www.shotcut.org/) or [Kdenlive](https://kdenlive.org/))
+ * [poppler](https://poppler.freedesktop.org/) (PDF to image conversion)
+ * [MLT Multimedia Framework](https://www.mltframework.org/) (used by many video editors, such as [Shotcut](https://www.shotcut.org/) or [Kdenlive](https://kdenlive.org/))
 
 Optional TTS-Services:
- * [Coqui TTS]( ) (open source TTS Python tool)
+ * [Coqui TTS](https://github.com/coqui-ai/TTS) (open source TTS Python tool)
  * [OpenAI's Python API](https://github.com/openai/openai-python) (**Note**: using OpenAI's TTS service requires paid API access)
 
 Note that you need at least one working TTS service to run `tavox`.
@@ -61,16 +55,16 @@ However, you can also create new ones yourself.
 
 Optional:
  * [Shotcut](https://www.shotcut.org/), [Kdenlive](https://kdenlive.org/en/) (allows to view the generated mlt files)
- * [rubber](https://github.com/petrhosek/rubber) (to build the examples)
+ * [latexmk](https://mgeier.github.io/latexmk.html) (to build the examples)
 
 
-Below you will find instructions for installing the dependencies on Fedora (40+) and Ubuntu (tested on 22.04).
+Below you will find instructions for installing the dependencies on Fedora (41+), Ubuntu (tested on 22.04) and Windows 11.
 
-### Fedora
+### Fedora (41+)
 
 ```bash
-sudo dnf install ffmpeg ImageMagick mlt
-sudo dnf install shotcut rubber # optional
+sudo dnf install ffmpeg poppler mlt
+sudo dnf install shotcut latexmk # optional
 pip install openai # optional
 ```
 
@@ -82,16 +76,14 @@ python3.9 -m ensurepip
 python3.9 -m pip install TTS
 ```
 
-### Ubuntu
+### Ubuntu (22.04)
 
 ```bash
-sudo apt-get install ImageMagick melt
-sudo apt-get install shotcut rubber # optional
+sudo apt-get install poppler melt
+sudo apt-get install latexmk # to build the examples
+sudo apt-get install shotcut # optional
 pip install openai # optional
 ```
-
-Be aware that this just installs the `melt` CLI tool from MLT and it appears that there does not exist an Ubuntu package for the whole framework.
-However, as of writing, a full installation of the MLT framework is not required, the shotcut package comes with its own version and `Tavox` only uses `melt`.
 
 According to its installation guide `Coqui TTS` works on Ubuntu (18.04) with Python versions `>=3.9,<3.12`.
 On Ubuntu 22.04 (Jammy) `Coqui TTS` worked out of the box with Python 3.11.4 and 3.11.5.
@@ -101,9 +93,42 @@ It can be installed via
 pip3 install TTS
 ```
 
-Converting PDFs to PNGs using ImageMagick in Ubuntu might produce an error.
-An appropriate fix can be found [here](https://stackoverflow.com/questions/52998331).
 
+### Windows 11
+
+```powershell
+winget install ffmpeg poppler shotcut
+winget install python # if not already installed via different means
+winget install git.git ezwinports.make # optional, to clone the repository and build the examples
+pip install openai # optional, to use OpenAI's TTS service
+```
+
+## Installation
+
+To install `tavox` you need to clone the repository and install the Python package as well as the LaTeX package
+
+```bash
+git clone https://github.com/fhuemer/tavox
+cd tavox
+pip install . # installs the python package 
+```
+
+To make the `tavox` LaTeX package available to your documents you have to make sure that the `tavox.sty` file is in your LaTeX search path.
+
+* Linux: Copy `latex/tavox.sty` to `~/texmf/tex/latex/`
+* Windows (MiKTeX): Use the MiKTeX Console (*Settings -> Directories*) to configure your LaTeX search path and add the `latex` directory of the `tavox` repository to it.
+* Windows (TeX Live): Copy `latex/tavox.sty` to `C:\texlive\texmf-local\tex\latex\tavox`
+
+You can also copy the `tavox.sty` file to the same directory as your LaTeX document, or set the `TEXINPUTS` environment variable to include the `latex` directory of the `tavox` repository.
+
+**Important**: Whenever you update to a new version of `tavox` make sure you update both the Python and the LaTeX package.
+
+If you want to use OpenAI's TTS service, you also need to set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
+You can do this by adding the following line to your `.bashrc`:
+
+```bash
+export OPENAI_API_KEY="your_openai_api_key"
+```
 
 ## Getting Started
 
@@ -112,7 +137,12 @@ To get started go through the examples presentations in the `examples` folder. T
  * `slides`: creates the slides PDF
  * `transcript` creates the transcript PDF (the file [transcript_setup.tex](examples/transcript_setup.tex) configures the style of transcript)
  * `video`: renders the video
- * `video_VOICE`: renders the video using the specified `VOICE` (e.g. `make video_alloy` for the default OpenAI voice).
+ * `video_VOICE`: renders the video using the specified `VOICE` (e.g., use `make video_alloy` for the default OpenAI voice).
+
+Note that you don't need to install `tavox` in order to compile the examples. 
+The build script always use the current tavox version of the repository.
+However, if tavox was not installed via pip, you might have to install some Python dependencies such as `docopt` manually if you don't have them already installed (e.g., `pip install docopt`).
+If you are running Windows be sure to use the *Git Bash* and not CMD or PowerShell to run the Makefile targets.
 
 ## Licensing Information
 

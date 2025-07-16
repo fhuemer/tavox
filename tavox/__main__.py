@@ -26,6 +26,8 @@ import tempfile
 import subprocess
 import shutil
 import sys
+import pathlib
+import platform
 import logging
 import logging.config
 
@@ -137,6 +139,25 @@ def run_script(script: str | os.PathLike):
 		print(ex)
 		exit(1)
 
+def get_melt_bin() -> str:
+	melt_bin_name = None
+
+	if platform.system() == "Linux":
+		for x in ["mlt-melt", "melt"]:
+			if shutil.which(x) is not None:
+				melt_bin_name = x
+				break
+		if melt_bin_name is None:
+			raise RuntimeError("melt command not found!")
+	elif platform.system() == "Windows":
+		for x in [ os.path.expandvars(r"%LOCALAPPDATA%/Programs/Shotcut") ]:
+			melt_exe = pathlib.Path(f"{x}/melt.exe")
+			if melt_exe.exists():
+				melt_bin_name = melt_exe
+		if melt_bin_name is None:
+			raise RuntimeError("melt.exe not found!")
+
+	return melt_bin_name
 
 def main():
 	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.1")
@@ -167,17 +188,6 @@ def main():
 	if not options["--no-video"]:
 		print("rendering video")
 
-		melt_bin_name = None
-
-		for x in ["mlt-melt", "melt"]:
-			if shutil.which(x) is not None:
-				melt_bin_name = x
-				break
-
-		if melt_bin_name is None:
-			print("It seems that the melt command is not installed")
-			exit(1)
-
 		out_path = f"{script.name}.mkv"
 		if options["--out-path"] is not None:
 			out_path = options["--out-path"]
@@ -189,6 +199,13 @@ def main():
 			vcodec = "libopenh264"
 		else:
 			raise RuntimeError("no video encoder found")
+
+		try:
+			melt_bin_name = get_melt_bin()
+		except Exception as ex:
+			print("It seems that the melt command is not installed")
+			raise ex
+			exit(1)
 
 		print(f"using video codec: {vcodec}")
 		mlt_cmd = f"{melt_bin_name} -progress -verbose {mlt_project_file} -consumer avformat:{out_path} acodec=flac vcodec={vcodec} preset=slow crf=16"
