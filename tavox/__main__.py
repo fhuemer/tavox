@@ -19,7 +19,6 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import re
 import docopt
 import os
 import tempfile
@@ -27,7 +26,6 @@ import subprocess
 import shutil
 import sys
 import pathlib
-import platform
 import logging
 import logging.config
 
@@ -36,24 +34,94 @@ from pathlib import Path
 
 from tavox import *
 
+
+class LevelFilter(logging.Filter):
+	def __init__(self, level):
+		super().__init__()
+		self.level = level
+
+	def filter(self, record):
+		return record.levelno == self.level
+
+class LevelRangeFilter(logging.Filter):
+	def __init__(self, low, high):
+		super().__init__()
+		self.low = low
+		self.high = high
+
+	def filter(self, record):
+		if self.low is None and self.high is None:
+			return True
+		elif self.high is None:
+			return record.levelno >= self.low
+		elif self.low is None:
+			return record.levelno < self.high
+		
+		return self.low <= record.levelno < self.high
+
+
+red = "\x1b[31;20m"
+bold_red = "\x1b[31;1m"
+yellow = "\x1b[33;20m"
+grey = "\x1b[90;20m"
+reset = "\x1b[0m"
+
 logging_cfg = {
 	"version": 1,
 	"disable_existing_loggers": False,
+	"filters": {
+		"below_info": {
+			"()": "__main__.LevelRangeFilter",
+			"low": None,
+			"high": logging.INFO
+		},
+		"below_error_downto_info": {
+			"()": "__main__.LevelRangeFilter",
+			"low": logging.INFO,
+			"high": logging.ERROR
+		},
+		"error_and_above": {
+			"()": "__main__.LevelRangeFilter",
+			"low": logging.ERROR,
+			"high": None
+		},
+	},
 	"formatters": {
-		"simple": {
+		"simple_info": {
 			"format": "%(message)s"
+		},
+		"simple_error": {
+			"format": f"{red}Error: {reset}" + "%(message)s"
+		},
+		"simple_debug": {
+			"format": f"{grey}Debug: {reset}" + "%(message)s"
 		}
 	},
 	"handlers": {
-		"console": {
+		"console_error": {
 			"class": "logging.StreamHandler",
-			"level": "INFO",
-			"formatter": "simple",
+			"level": "ERROR",
+			"formatter": "simple_error",
+			"filters": ["error_and_above"]
+		},
+		"console_info": {
+			"class": "logging.StreamHandler",
+			"level": "DEBUG",
+			"formatter": "simple_info",
+			"filters": ["below_error_downto_info"]
+		},
+		"console_debug": {
+			"class": "logging.StreamHandler",
+			"level": "DEBUG",
+			"formatter": "simple_debug",
+			"filters": ["below_info"]
 		}
 	},
 	"loggers": {
 		"tavox": {
-			"level": "INFO", "handlers": ["console"], "propagate": False
+			"level": "INFO",
+			"handlers": ["console_debug", "console_info", "console_error"],
+			"propagate": False
 		}
 	}
 }
@@ -76,96 +144,48 @@ Options:
                      before the actual SCRIPT is run and the voice is set. This
                      can be used to, e.g., load a custom voice.
   --list-voices      Print the list of available voices.
+  --debug            Enable debug output.
+  -h --help          Show this help message.
+  --version          Show version information.
 """
 #--------|---------|---------|---------|---------|---------|---------|---------|
 
 
-def get_ffmpeg_encoders() -> dict[str, dict[str, str]]:
-	"""
-	Parses the output of `ffmpeg -v 0 -encoders` into a dictionary structure.
-	Returns:
-		dict: A dictionary where keys are encoder names and values are descriptions.
-	"""
-	# Run the `ffmpeg` command to get the list of encoders
-	try:
-		result = subprocess.run(["ffmpeg", "-v", "0", "-encoders"], capture_output=True, text=True, check=True)
-	except subprocess.CalledProcessError as e:
-		raise RuntimeError(f"Error running ffmpeg: {e}")
-
-	# Split the output into lines
-	lines = result.stdout.splitlines()
-
-	# Initialize the encoders dictionary
-	encoders = {}
-
-	# Flag to determine when to start processing encoder lines
-	start_processing = False
-
-	for line in lines:
-		# Detect the line which only contains spaces
-		if re.match(r"[\-]+", line.strip()):
-			start_processing = True
-			continue
-
-		# Skip lines until we reach the encoder list
-		if not start_processing:
-			continue
-
-		# Parse each encoder line (format: flags name description)
-		match = re.match(r"^\s*([A-Z\.]+)\s+([^\s]+)\s+(.+)", line)
-		if match:
-			flags, name, description = match.groups()
-			encoders[name] = {"flags": flags.strip(), "description": description.strip()}
-
-	return encoders
-
-
 def run_script(script: str | os.PathLike):
 	script_path = Path(script)
-	with open(script_path) as script_file:
-		try:
-			code_obj = compile(script_file.read(), script_file.name, "exec")
-		except SyntaxError as ex:
-			print(f"Failed to comile script '{script_path}'!")
-			print(f"Error in line {ex.lineno}: {ex.text}")
-			exit(1)
+	try:
+		with open(script_path) as script_file:
+			try:
+				code_obj = compile(script_file.read(), script_file.name, "exec")
+			except SyntaxError as ex:
+				logger.error(f"Failed to comile script '{script_path}'! Error in line {ex.lineno}: {ex.text}")
+				raise ex
+	except FileNotFoundError as ex:
+		logger.error(f"Script '{script_path}' not found!")
+		raise ex
+
 	try:
 		old_wd = os.getcwd()
 		os.chdir(script_path.parent)
 		exec(code_obj)
 		os.chdir(old_wd)
 	except Exception as ex:
-		print(f"Failed to execute script '{script_path}'")
-		print(ex)
-		exit(1)
+		logger.error(f"Failed to execute script '{script_path}'")
+		raise ex
 
-def get_melt_bin() -> str:
-	melt_bin_name = None
-
-	if platform.system() == "Linux":
-		for x in ["mlt-melt", "melt"]:
-			if shutil.which(x) is not None:
-				melt_bin_name = x
-				break
-		if melt_bin_name is None:
-			raise RuntimeError("melt command not found!")
-	elif platform.system() == "Windows":
-		for x in [ os.path.expandvars(r"%LOCALAPPDATA%/Programs/Shotcut") ]:
-			melt_exe = pathlib.Path(f"{x}/melt.exe")
-			if melt_exe.exists():
-				melt_bin_name = melt_exe
-		if melt_bin_name is None:
-			raise RuntimeError("melt.exe not found!")
-
-	return melt_bin_name
+logger = logging.getLogger("tavox")
 
 def main():
-	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.1")
+	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.2.5")
+
+	if options["--debug"]:
+		logger.setLevel(logging.DEBUG)
+		logger.debug("Debug output enabled")
 
 	if options["--list-voices"]:
 		for v in available_voices():
 			print(v)
-		exit()
+		return
 
 	script = Path(options["<SCRIPT>"])
 
@@ -186,35 +206,41 @@ def main():
 	create_mlt(project, mlt_project_file, merge_speak_commands=options["--speak-merge"])
 
 	if not options["--no-video"]:
-		print("rendering video")
+		logger.info("rendering video")
 
 		out_path = f"{script.name}.mkv"
 		if options["--out-path"] is not None:
 			out_path = options["--out-path"]
 
-		supported_codecs = get_ffmpeg_encoders()
+		supported_codecs = ffmpeg_get_encoders()
 		if "libx264" in supported_codecs:
 			vcodec = "libx264"
 		elif "libopenh264" in supported_codecs:
 			vcodec = "libopenh264"
 		else:
+			logger.error("No suitable video codec found.")
 			raise RuntimeError("no video encoder found")
 
-		try:
-			melt_bin_name = get_melt_bin()
-		except Exception as ex:
-			print("It seems that the melt command is not installed")
-			raise ex
-			exit(1)
-
-		print(f"using video codec: {vcodec}")
-		mlt_cmd = f"{melt_bin_name} -progress -verbose {mlt_project_file} -consumer avformat:{out_path} acodec=flac vcodec={vcodec} preset=slow crf=16"
-		print(f"using mlt command: {mlt_cmd}")
-		result = subprocess.run(mlt_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		if result.returncode != 0:
-			print(f"error rendering video {result.stderr}")
-			exit(1)
-
+		logger.info(f"using video codec: {vcodec}")
+		run_melt([
+			"-progress",
+			"-verbose",
+			f"{mlt_project_file}",
+			"-consumer",
+			f"avformat:{out_path}",
+			"acodec=flac",
+			f"vcodec={vcodec}",
+			"preset=slow",
+			"crf=16"
+		])
+		logger.info(f"video rendered to {out_path}")
 
 if __name__ == "__main__":
-	main()
+	try:
+		main()
+	except Exception as ex:
+		if logger.getEffectiveLevel() <= logging.DEBUG:
+			raise ex
+		exit(1)
+	
+

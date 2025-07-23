@@ -97,7 +97,7 @@ pip3 install TTS
 ### Windows 11
 
 ```powershell
-winget install ffmpeg poppler shotcut
+winget install poppler shotcut
 winget install python # if not already installed via different means
 winget install git.git ezwinports.make # optional, to clone the repository and build the examples
 pip install openai # optional, to use OpenAI's TTS service
@@ -110,7 +110,7 @@ To install `tavox` you need to clone the repository and install the Python packa
 ```bash
 git clone https://github.com/fhuemer/tavox
 cd tavox
-pip install . # installs the python package 
+python -m pip install . # installs the python package 
 ```
 
 To make the `tavox` LaTeX package available to your documents you have to make sure that the `tavox.sty` file is in your LaTeX search path.

@@ -22,3 +22,4 @@ from .project import TavoxProject
 from .script import speak, show_slide, show_slide_range, show_next_slide, set_pdf, delay, set_voice, activate_project
 from .mlt import create_mlt
 from .voices import available_voices, register_voice, Voice
+from .external_tools import run_pdftoppm, run_melt, ffprobe_get_audio_length, ffmpeg_get_encoders

@@ -18,7 +18,6 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import subprocess
 import os
 import uuid
 import textwrap
@@ -35,6 +34,7 @@ from datetime import timedelta
 from .cache import SampleDB
 from .project import TavoxProject
 from .events import *
+from .external_tools import run_pdftoppm, ffprobe_get_audio_length
 
 logger = logging.getLogger("tavox")
 
@@ -89,7 +89,7 @@ def _render_pdfs(pdf_files: list[Path], mlt: _MLTProject) -> dict[Path, Path]:
 
 	unique_paths = []
 	for pdf in pdf_files:
-		logger.debug(f" * {pdf}")
+		logger.debug(f"processing {pdf}")
 		dest_path = f"{mlt.project_file_path.parent}/{pdf.name}"
 		while dest_path in unique_paths:
 			dest_path = f"{mlt.project_file_path.parent}/{pdf.name}_{uuid.uuid4().hex}"
@@ -104,14 +104,7 @@ def _render_pdfs(pdf_files: list[Path], mlt: _MLTProject) -> dict[Path, Path]:
 
 	for pdf, dest in mlt.pdf_image_dict.items():
 		logger.info(f"rendering {pdf.name} to {dest}/*.png")
-		r = subprocess.run(
-			f"pdftoppm -png -r 600 -scale-to-y {mlt.height} -scale-to-x {mlt.width} {pdf} {dest}/slide",
-			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE,
-			shell=True
-		)
-		if r.returncode != 0:
-			raise Exception(f"Unable to render PDF. pdftoppm exited with return code {r.returncode}. stderr: {r.stderr.decode("utf-8")}")
+		run_pdftoppm(["-png", "-r", "600", "-scale-to-y", f"{mlt.height}", "-scale-to-x", f"{mlt.width}", f"{pdf}", f"{dest}/slide"])
 
 
 def _process_slide_events(mlt: _MLTProject):
@@ -240,10 +233,6 @@ def _create_mlt_producers(mlt: _MLTProject):
 
 def _create_mlt_playlists(mlt: _MLTProject):
 
-	def get_audio_length(audio_file) -> float:
-		ffprobe_cmd = f"ffprobe -i {audio_file} -show_entries format=duration -v quiet -of csv=\"p=0\""
-		return float(subprocess.check_output(ffprobe_cmd, shell=True).decode("utf-8"))
-
 	def add_event_to_video_playlist(event: TimelineEvent, target_duration: int):
 		match event:
 			case ShowImageEvent():
@@ -296,7 +285,7 @@ def _create_mlt_playlists(mlt: _MLTProject):
 				current_video_event_duration += length
 				mlt.audio_playlist_xml += f"""<blank length="{length}"/>\n"""
 			case PlayAudioEvent():
-				length = to_frames(get_audio_length(event.audio_file))
+				length = to_frames(ffprobe_get_audio_length(event.audio_file))
 				current_video_event_duration += length
 				mlt.audio_playlist_xml += f"""<entry producer="{mlt.producers_dict[event.audio_file]}" out="{length-1}"/>\n"""
 			case _:
