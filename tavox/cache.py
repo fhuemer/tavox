@@ -45,7 +45,12 @@ class SampleDB:
 
 	def _add_sample_to_db(self, text: str, voice: Voice):
 		sample_dir = tempfile.TemporaryDirectory(prefix="tavox_", delete=False)
-		voice.generate_sample(text, sample_dir.name)
+		try:
+			voice.generate_sample(text, sample_dir.name)
+		except Exception as e:
+			logger.error(f"Unable to synthesize sample \"{textwrap.shorten(text, 40)}\" with voice {self.voice.voice_id}")
+			raise e
+
 		sample_path = glob.glob(f"{sample_dir.name}/*")
 		if len(sample_path) != 1:
 			raise Exception("The Voice instance created an unexpected number of files.")
