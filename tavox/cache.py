@@ -24,11 +24,14 @@ import os
 import shutil
 import glob
 import tempfile
+import logging
+import textwrap
 
 from pathlib import Path
 
 from .voices import Voice
 
+logger = logging.getLogger("tavox")
 
 def hash_text(text: str) -> str:
 	m = hashlib.sha256()
@@ -48,7 +51,7 @@ class SampleDB:
 		try:
 			voice.generate_sample(text, sample_dir.name)
 		except Exception as e:
-			logger.error(f"Unable to synthesize sample \"{textwrap.shorten(text, 40)}\" with voice {self.voice.voice_id}")
+			logger.error(f"Unable to synthesize sample \"{textwrap.shorten(text, 40)}\" with voice {voice.voice_id}")
 			raise e
 
 		sample_path = glob.glob(f"{sample_dir.name}/*")
