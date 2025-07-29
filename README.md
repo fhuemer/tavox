@@ -1,7 +1,7 @@
 
-# tavox
+# Tavox
 
-`tavox` is a tool for adding (TTS-based) voice-over tracks to your LaTeX beamer presentations and for automatically generating videos out of them.
+Tavox is a tool for adding (TTS-based) voice-over tracks to your LaTeX beamer presentations and for automatically generating videos out of them.
 It consists of two parts: a [LaTeX package](latex/tavox.sty) and a [Python package](tavox).
 
 
@@ -24,12 +24,12 @@ Consider the example `demo.tex` shown below.
 \end{document}
 ```
 
-This example is deliberately kept simple to highlight the ease with which `tavox` can be integrated into your presentations.
+This example is deliberately kept simple to highlight the ease with which Tavox can be integrated into your presentations.
 However, the `speak` command is actually much more powerful and also supports Beamer-style overlay specifications and optional arguments to introduce delays before and after the spoken lines.
-Please refer to the `examples` directory for more advanced demonstrations of the capabilities of `tavox`.
+Please refer to the `examples` directory for more advanced demonstrations of the capabilities of Tavox.
 
 Upon compilation of the above presentation, a file named `demo.tavox` will be created by the package.
-This file can then be passed on to the accompanying `tavox` CLI tool that comes with the `tavox` Python package to create a video:
+This file can then be passed on to the accompanying Tavox CLI tool that comes with the `tavox` Python package to create a video:
 
 ```bash
 python -m tavox demo.tavox
@@ -50,11 +50,11 @@ Optional TTS-Services:
  * [Coqui TTS](https://github.com/coqui-ai/TTS) (open source TTS Python tool)
  * [OpenAI's Python API](https://github.com/openai/openai-python) (**Note**: using OpenAI's TTS service requires paid API access)
 
-Note that you need at least one working TTS service to run `tavox`.
+Note that you need at least one working TTS service to use Tavox.
 However, you can also create new ones yourself.
 
 Optional:
- * [Shotcut](https://www.shotcut.org/), [Kdenlive](https://kdenlive.org/en/) (allows to view the generated mlt files)
+ * [Shotcut](https://www.shotcut.org/), [Kdenlive](https://kdenlive.org/en/) (allows to view the generated `mlt` project files)
  * [latexmk](https://mgeier.github.io/latexmk.html) (to build the examples)
 
 
@@ -105,30 +105,46 @@ pip install openai # optional, to use OpenAI's TTS service
 
 ## Installation
 
-To install `tavox` you need to clone the repository and install the Python package as well as the LaTeX package
+To install Tavox you need to clone the repository and install the Python package as well as the LaTeX package.
+The provided Makefile in the root directory of the repository provides a convenient way to do this.
 
 ```bash
 git clone https://github.com/fhuemer/tavox
 cd tavox
-python -m pip install . # installs the python package 
+make install
 ```
 
-To make the `tavox` LaTeX package available to your documents you have to make sure that the `tavox.sty` file is in your LaTeX search path.
+### Details
 
-* Linux: Copy `latex/tavox.sty` to `~/texmf/tex/latex/`
-* Windows (MiKTeX): Use the MiKTeX Console (*Settings -> Directories*) to configure your LaTeX search path and add the `latex` directory of the `tavox` repository to it.
-* Windows (TeX Live): Copy `latex/tavox.sty` to `C:\texlive\texmf-local\tex\latex\tavox`
+The `install` target of the Makefile installs the `tavox` Python package using `pip` (i.e., `python -m pip install .`).
+To make the `tavox` LaTeX package available to your documents, the `tavox.sty` file must be in your LaTeX search path.
+Hence, one of the following things happens.
 
-You can also copy the `tavox.sty` file to the same directory as your LaTeX document, or set the `TEXINPUTS` environment variable to include the `latex` directory of the `tavox` repository.
+* Linux: `latex/tavox.sty` is copied to `~/texmf/tex/latex/`
+* Windows: The installation script detects your TeX distribution and performs the following operations:
+  * MiKTeX: A new root path is added to the MiKTeX configuration, pointing to the `latex` directory of the `tavox` repository.
+  * TeX Live: The `latex/tavox.sty` file is copied to where ever `TEXMFHOME` points to (usually `~/texmf/tex/latex/`).
+
+If you don't want to use the Makefile, you can also install the LaTeX package manually by, e.g., copying the `tavox.sty` file to the same directory as your LaTeX document, or set the `TEXINPUTS` environment variable to include the `latex` directory of the `tavox` repository.
 
 **Important**: Whenever you update to a new version of `tavox` make sure you update both the Python and the LaTeX package.
 
+### OpenAI API Key
+
 If you want to use OpenAI's TTS service, you also need to set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
+
 You can do this by adding the following line to your `.bashrc`:
 
 ```bash
 export OPENAI_API_KEY="your_openai_api_key"
 ```
+
+On Windows, you can set the environment variable in the System Properties dialog or by using PowerShell:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "your_openai_api_key", "User")
+```
+
 
 ## Getting Started
 
@@ -139,9 +155,9 @@ To get started go through the examples presentations in the `examples` folder. T
  * `video`: renders the video
  * `video_VOICE`: renders the video using the specified `VOICE` (e.g., use `make video_alloy` for the default OpenAI voice).
 
-Note that you don't need to install `tavox` in order to compile the examples. 
-The build script always use the current tavox version of the repository.
-However, if tavox was not installed via pip, you might have to install some Python dependencies such as `docopt` manually if you don't have them already installed (e.g., `pip install docopt`).
+Note that you don't need to install `tavox` in order to compile the examples.
+The build script always uses the current Tavox version of the repository.
+However, if Tavox was not installed via pip, you might have to install some Python dependencies such as `docopt` manually if you don't have them already installed (e.g., `pip install docopt`).
 If you are running Windows be sure to use the *Git Bash* and not CMD or PowerShell to run the Makefile targets.
 
 ## Licensing Information
@@ -165,6 +181,6 @@ For full licensing terms, see the included `LICENSE-LPPL.txt` or visit:
 
 ### Additional Notes
 
-** Of course, all content you produce using `tavox` is your own! **
+**Of course, all content you produce using `tavox` is your own!**
 
 
