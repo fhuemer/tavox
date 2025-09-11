@@ -19,7 +19,29 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-from tavox.cli import main
+import logging
 
-if __name__ == "__main__":
-	main()
+class LevelFilter(logging.Filter):
+	def __init__(self, level):
+		super().__init__()
+		self.level = level
+
+	def filter(self, record):
+		return record.levelno == self.level
+
+
+class LevelRangeFilter(logging.Filter):
+	def __init__(self, low, high):
+		super().__init__()
+		self.low = low
+		self.high = high
+
+	def filter(self, record):
+		if self.low is None and self.high is None:
+			return True
+		elif self.high is None:
+			return record.levelno >= self.low
+		elif self.low is None:
+			return record.levelno < self.high
+		
+		return self.low <= record.levelno < self.high
