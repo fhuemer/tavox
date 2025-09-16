@@ -105,6 +105,13 @@ def _render_pdfs(pdf_files: list[Path], mlt: _MLTProject) -> dict[Path, Path]:
 	for pdf, dest in mlt.pdf_image_dict.items():
 		logger.info(f"rendering {pdf.name} to {dest}/*.png")
 		run_pdftoppm(["-png", "-r", "600", "-scale-to-y", f"{mlt.height}", "-scale-to-x", f"{mlt.width}", f"{pdf}", f"{dest}/slide"])
+		# rename files to remove leading zeros in slide numbers
+		for path in list(glob.glob(f"{dest}/slide-*.png")):
+			slide_number = Path(path).name.removeprefix("slide-").removesuffix(".png")
+			if slide_number.startswith("0"):
+				new_path = f"{dest}/slide-{int(slide_number)}.png"
+				shutil.move(path, new_path)
+				logger.debug(f"renamed {path} to {new_path}")
 
 
 def _process_slide_events(mlt: _MLTProject):
