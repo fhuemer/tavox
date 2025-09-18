@@ -93,14 +93,16 @@ def register_voice(name: str, voice: str | Voice):
 		for k, v in _voice_dict.items():
 			if isinstance(v, Voice) and v.voice_id == voice.voice_id:
 				raise ValueError(
-					f"There already exists a voice with the same voice_id: ({k}). Use the function deregister_voice to remove the conflicting voice or make sure to provide Voice instance provides a different 'voice_id'. "
+					f"There already exists a voice with the same voice_id: ({k}). Use the function deregister_voice to remove the conflicting voice or make sure your Voice instance provides a different 'voice_id'."
 				)
 
 	_voice_dict[name] = voice
 
 
 def deregister_voice(name: str):
-	pass
+	if name not in _voice_dict:
+		raise ValueError(f"There is no voice with the name '{name}'")
+	del _voice_dict[name]
 
 
 # register OpenAI voices

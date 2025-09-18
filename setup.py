@@ -22,7 +22,7 @@ from setuptools import setup
 
 setup(
 	name="tavox",
-	version="0.2.7",
+	version="0.2.8",
 	description="Text-to-speech tool for presentations",
 	author="Florian Huemer",
 	license="GPLv3",

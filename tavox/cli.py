@@ -151,7 +151,7 @@ def run_script(script: str | os.PathLike):
 logger = logging.getLogger("tavox")
 
 def run_tavox():
-	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.2.7")
+	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.2.8")
 
 	if options["--debug"]:
 		logger.setLevel(logging.DEBUG)
