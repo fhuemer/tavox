@@ -20,12 +20,14 @@
 
 from setuptools import setup
 
+exec(open("tavox/_version.py").read())
+
 setup(
 	name="tavox",
-	version="0.2.8",
+	version=__version__,
 	description="Text-to-speech tool for presentations",
 	author="Florian Huemer",
-	license="GPLv3",
+	license="LGPLv3",
 	packages=["tavox"],
 	install_requires=["docopt"],
 	entry_points={

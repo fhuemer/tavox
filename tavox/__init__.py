@@ -18,6 +18,7 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+from ._version import __version__
 from .project import TavoxProject
 from .script import speak, show_slide, show_slide_range, show_next_slide, set_pdf, delay, set_voice, activate_project
 from .mlt import create_mlt

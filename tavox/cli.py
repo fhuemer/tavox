@@ -33,7 +33,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 from tavox import *
-
+from tavox import __version__
 
 red = "\x1b[31;20m"
 bold_red = "\x1b[31;1m"
@@ -151,7 +151,7 @@ def run_script(script: str | os.PathLike):
 logger = logging.getLogger("tavox")
 
 def run_tavox():
-	options: dict[str, Any] = docopt.docopt(usage_msg, version="0.2.8")
+	options: dict[str, Any] = docopt.docopt(usage_msg, version=__version__)
 
 	if options["--debug"]:
 		logger.setLevel(logging.DEBUG)
@@ -217,5 +217,5 @@ def main():
 		if logger.getEffectiveLevel() <= logging.DEBUG:
 			raise ex
 		exit(1)
-	
+
 
