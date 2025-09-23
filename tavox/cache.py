@@ -34,10 +34,7 @@ from .voices import Voice
 logger = logging.getLogger("tavox")
 
 def hash_text(text: str) -> str:
-	m = hashlib.sha256()
-	m.update(text.encode("utf-8"))
-	m.digest()
-	return str(m.hexdigest())
+	return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 class SampleDB:
@@ -61,6 +58,11 @@ class SampleDB:
 
 		base_path = Path(f"{self._path}/{voice.voice_id}")
 		os.makedirs(base_path, exist_ok=True)
+
+		voice_info = voice.info
+		if voice_info is not None:
+			with open(f"{base_path}.info", "w") as info_file:
+				info_file.write(voice_info)
 
 		h = hash_text(text)
 

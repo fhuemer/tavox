@@ -22,26 +22,41 @@ import subprocess
 import textwrap
 import os
 import logging
+import hashlib
+import base64
+import json
 
+from abc import ABC, abstractmethod
+from typing import Optional
+from urllib.parse import urlparse
 
 logger = logging.getLogger("tavox")
 
 
-class Voice:
-	voice_id: str
+class Voice(ABC):
 
+	@abstractmethod
 	def generate_sample(self, text: str, dir_path: str | os.PathLike):
 		pass
+
+	@property
+	@abstractmethod
+	def voice_id(self) -> str:
+		pass
+
+	@property
+	def info(self) -> str | None:
+		return None
 
 
 class CoquiTTS(Voice):
 
 	def __init__(self, model: str):
-		self.voice_id = f"coquiTTS/{model}"
+		self._voice_id = f"coquiTTS/{model}"
 		self._model = model
 
 	def generate_sample(self, text: str, dir_path: str | os.PathLike):
-		logger.info(f"[coquiTTS] synthesizing sample: {textwrap.shorten(text, 40)}")
+		logger.info(f"[coquiTTS] generating: {textwrap.shorten(text, 40)}")
 		r = subprocess.run(
 			f"""tts --text "{text}" --model_name "{self._model}" --out_path={dir_path}/sample.wav""",
 			stdout=subprocess.PIPE,
@@ -51,19 +66,68 @@ class CoquiTTS(Voice):
 		if r.returncode != 0:
 			raise RuntimeError(f"[coquiTTS] Unable to generate TTS sample: {r.stderr}")
 
+	@property
+	def voice_id(self) -> str:
+		return self._voice_id
 
-class OpenAITTS(Voice):
 
-	def __init__(self, voice: str):
-		self.voice_id = f"openai/{voice}"
+class OpenAIAPIVoice(Voice):
+
+	def __init__(self, voice: str, model: str, *, instructions: Optional[str] = None, base_url: Optional[str] = None, api_key: Optional[str] = None):
 		self._voice = voice
+		self._model = model
+		self._base_url = base_url
+		self._api_key = api_key
+
+		instructions = instructions.strip() if instructions is not None else ""
+		self._instructions = instructions
+
+		self.service_name = "OpenAI"
+		voice_id_base = "openai"
+		if base_url is not None:
+			p = urlparse(base_url)
+			if p.netloc == "":
+				raise ValueError("Invalid base_url")
+			voice_id_base = f"{p.hostname}{p.path}"
+			voice_id_base = voice_id_base.strip('/')
+			self.service_name = f"{p.hostname}"
+
+		voice_suffix = ""
+		if instructions != "":
+			instructions_hash = base64.urlsafe_b64encode(hashlib.sha256(instructions.encode("utf-8")).digest())[:24] # should be enough
+			voice_suffix = f"_{instructions_hash.decode("utf-8")}"
+
+		self._voice_id = f"{voice_id_base}/{model}/{voice}{voice_suffix}"
+		self._client = None
+
+	def _get_client(self):
+		from openai import OpenAI
+		if self._client is None:
+			if self._base_url is None:
+				# use the "offical" OpenAI API
+				if self._api_key is not None:
+					api_key = os.environ["OPENAI_API_KEY"]
+				else:
+					api_key = self._api_key
+				self._client = OpenAI(api_key=api_key)
+			else:
+				self._client = OpenAI(api_key=self._api_key, base_url=self._base_url)
+		return self._client
 
 	def generate_sample(self, text: str, dir_path: str | os.PathLike):
-		from openai import OpenAI
-		logger.info(f"[OpenAI] synthesizing sample: {textwrap.shorten(text, 40)}")
-		client = OpenAI()
-		r = client.audio.speech.create(model="tts-1", voice=self._voice, response_format="wav", input=text)
+		logger.info(f"[{self.service_name}] generating: {textwrap.shorten(text, 40)}")
+		r = self._get_client().audio.speech.create(model=self._model, voice=self._voice, instructions=self._instructions, response_format="wav", input=text)
 		r.write_to_file(f"{dir_path}/sample.wav")
+
+	@property
+	def voice_id(self) -> str:
+		return self._voice_id
+	
+	@property
+	def info(self) -> str | None:
+		if self._instructions == "":
+			return None
+		return json.dumps({"instructions": self._instructions})
 
 
 _voice_dict: dict[str, str | Voice] = {}
@@ -95,6 +159,13 @@ def register_voice(name: str, voice: str | Voice):
 				raise ValueError(
 					f"There already exists a voice with the same voice_id: ({k}). Use the function deregister_voice to remove the conflicting voice or make sure your Voice instance provides a different 'voice_id'."
 				)
+	elif isinstance(voice, str):
+		if voice == name:
+			raise ValueError("A voice cannot reference itself.")
+		if voice not in _voice_dict:
+			raise ValueError(f"There is no voice with the name '{voice}'")
+	else:
+		raise TypeError("voice must be either a string or a Voice instance")
 
 	_voice_dict[name] = voice
 
@@ -106,8 +177,11 @@ def deregister_voice(name: str):
 
 
 # register OpenAI voices
-for v in ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]:
-	register_voice(v, OpenAITTS(v))
+for v in ["alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"]:
+	register_voice(f"{v}_tts-1", OpenAIAPIVoice(v, "tts-1"))
+	register_voice(f"{v}_tts-1-hd", OpenAIAPIVoice(v, "tts-1-hd"))
+	register_voice(f"{v}_gpt-4o-mini-tts", OpenAIAPIVoice(v, "gpt-4o-mini-tts"))
+	register_voice(f"{v}", f"{v}_tts-1")
 
 # register coqui voices
 register_voice("tacotron2-DDC", CoquiTTS("tts_models/en/ljspeech/tacotron2-DDC"))
