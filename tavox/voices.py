@@ -25,6 +25,7 @@ import logging
 import hashlib
 import base64
 import json
+import time
 
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -115,8 +116,15 @@ class OpenAIAPIVoice(Voice):
 		return self._client
 
 	def generate_sample(self, text: str, dir_path: str | os.PathLike):
-		logger.info(f"[{self.service_name}] generating: {textwrap.shorten(text, 40)}")
-		r = self._get_client().audio.speech.create(model=self._model, voice=self._voice, instructions=self._instructions, response_format="wav", input=text)
+		from openai import RateLimitError
+		while True:
+			try:
+				logger.info(f"[{self.service_name}] generating: {textwrap.shorten(text, 40)}")
+				r = self._get_client().audio.speech.create(model=self._model, voice=self._voice, instructions=self._instructions, response_format="wav", input=text)
+				break
+			except RateLimitError as e:
+				logger.warning(f"[{self.service_name}] Rate limit exceeded, waiting 10 seconds...")
+				time.sleep(10)
 		r.write_to_file(f"{dir_path}/sample.wav")
 
 	@property
