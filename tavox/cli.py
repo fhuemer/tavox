@@ -104,8 +104,10 @@ logging.config.dictConfig(config=logging_cfg)
 
 usage_msg = """
 Usage:
-  tavox [options] <SCRIPT>
-  tavox --list-voices
+  tavox [--pre-script PS --no-video --speak-merge --mlt-project MLT --out-path PATH --voice VOICE --debug] <SCRIPT>
+  tavox [--pre-script PS --debug] --list-voices
+  tavox -h | --help
+  tavox --version
 
 Options:
   --no-video         Don't render the video, just create the mlt project.
@@ -133,7 +135,7 @@ def run_script(script: str | os.PathLike):
 			try:
 				code_obj = compile(script_file.read(), script_file.name, "exec")
 			except SyntaxError as ex:
-				logger.error(f"Failed to comile script '{script_path}'! Error in line {ex.lineno}: {ex.text}")
+				logger.error(f"Failed to compile script '{script_path}'! Error in line {ex.lineno}: {ex.text}")
 				raise ex
 	except FileNotFoundError as ex:
 		logger.error(f"Script '{script_path}' not found!")
@@ -158,6 +160,8 @@ def run_tavox():
 		logger.debug("Debug output enabled")
 
 	if options["--list-voices"]:
+		if options["--pre-script"]:
+			run_script(options["--pre-script"])
 		for v in available_voices():
 			print(v)
 		return
